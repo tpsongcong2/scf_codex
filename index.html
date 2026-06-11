@@ -2920,7 +2920,8 @@ function DeliveryOrdersTab({orders,setOrders,customers,setCustomers,products,quo
                 const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
                 // Parse rows: [date, point, productStr, qtyHD, _, time]
                 const orderMap={};
-                raw.forEach(r=>{
+                const invalidDateRows=[];
+                raw.forEach((r,idx)=>{
                   if(!r[1]||!r[2]) return;
                   // Format date
                   let dStr='';
@@ -2932,10 +2933,21 @@ function DeliveryOrdersTab({orders,setOrders,customers,setCustomers,products,quo
                   } else if(typeof r[0]==='string') dStr=r[0];
                   const point=(r[1]||'').toString().trim();
                   const time=(r[5]||r[4]||'').toString().trim();
+                  const dParts=(dStr||'').split('/');
+                  const dd=(dParts[0]||'').toString().padStart(2,'0');
+                  const mm=(dParts[1]||'').toString().padStart(2,'0');
+                  const yyyy=(dParts[2]||'').toString();
+                  const validDate=/^\d{2}$/.test(dd)&&/^\d{2}$/.test(mm)&&/^\d{4}$/.test(yyyy);
+                  if(!validDate){
+                    invalidDateRows.push(idx+1);
+                    return;
+                  }
+                  const yy=yyyy.slice(-2);
+                  const dateCode=yy+dd+mm;
                   const key=dStr+'|'+point+'|'+time;
                   if(!orderMap[key]){
                     orderMap[key]={
-                      id:'D'+(dStr?dStr.split('/')[2].slice(-2):new Date().getFullYear().toString().slice(-2))+(dStr||'').split('/').slice(0,2).join('')+String(Object.keys(orderMap).length+1).padStart(3,'0'),
+                      id:'D'+dateCode+String(Object.keys(orderMap).length+1).padStart(3,'0'),
                       deliveryDate:dStr,pointName:point,pointId:'',
                       customer:'',customerId:'',address:'',
                       deliveryTime:time,status:'pending',
@@ -2965,12 +2977,18 @@ function DeliveryOrdersTab({orders,setOrders,customers,setCustomers,products,quo
                   });
                 });
                 const newOrders=Object.values(orderMap).filter(o=>o.lines.length>0);
-                if(newOrders.length===0){alert('Không đọc được đơn hàng nào!');return;}
+                if(newOrders.length===0){
+                  alert(invalidDateRows.length?'Không tạo đơn nào. Có '+invalidDateRows.length+' dòng thiếu hoặc sai ngày/năm: dòng '+invalidDateRows.slice(0,20).join(', ')+(invalidDateRows.length>20?'...':''):'Không đọc được đơn hàng nào!');
+                  return;
+                }
                 // Check duplicates & unknown points
                 const dupOrders=newOrders.filter(o=>orders.some(ex=>ex.deliveryDate===o.deliveryDate&&ex.pointName===o.pointName&&ex.deliveryTime===o.deliveryTime));
                 const unknownPts=[...new Set(newOrders.filter(o=>!o.customerId).map(o=>o.pointName))];
                 // Store parsed data for modal
-                window._importData={newOrders,dupOrders,unknownPts};
+                if(invalidDateRows.length){
+                  alert('Đã bỏ qua '+invalidDateRows.length+' dòng thiếu hoặc sai ngày/năm: dòng '+invalidDateRows.slice(0,20).join(', ')+(invalidDateRows.length>20?'...':''));
+                }
+                window._importData={newOrders,dupOrders,unknownPts,invalidDateRows};
                 sm('importPreview');
               };
               reader.readAsBinaryString(file);
