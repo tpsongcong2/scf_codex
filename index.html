@@ -3030,19 +3030,21 @@ function DeliveryOrdersTab({orders,setOrders,customers,setCustomers,products,quo
                 // Cập nhật đơn
                 setOrders(prev=>prev.map(x=>x.id===o.id?{...x,tripId:newTripId||null,status:newTripId?'assigned':'pending'}:x));
               },
-              style:{fontSize:12,padding:'2px 4px',borderRadius:'var(--r)',border:'1px solid var(--bd)',maxWidth:130,color:o.tripId?'var(--pri)':'var(--tx2)'}
+              style:{fontSize:12,padding:'2px 6px',borderRadius:'var(--r)',border:'1px solid var(--bd)',width:230,maxWidth:'100%',color:o.tripId?'var(--pri)':'var(--tx2)'}
             },
               h('option',{value:''},'— Chọn chuyến —'),
               trips.filter(t=>!t.deliveryDate||t.deliveryDate===o.deliveryDate).map(t=>{
-                const parts=[t.id];
+                const parts=[];
+                if(t.deliveryDate) parts.push(t.deliveryDate);
                 if(t.shiftName) parts.push(t.shiftName);
-                if(t.driverName) parts.push(t.driverName);
-                if(t.totalWeight) parts.push(t.totalWeight.toFixed(0)+'kg');
+                if(t.driverName) parts.push(t.driverName); else parts.push('Chưa có lái xe');
+                if(t.area) parts.push(t.area);
+                if(t.totalWeight) parts.push(t.totalWeight.toFixed(0)+' kg');
                 return h('option',{key:t.id,value:t.id},parts.join(' · '));
               }),
               // Nếu chuyến đang chọn không cùng ngày vẫn hiện
               o.tripId&&!trips.filter(t=>!t.deliveryDate||t.deliveryDate===o.deliveryDate).find(t=>t.id===o.tripId)&&
-                h('option',{value:o.tripId},o.tripId)
+                h('option',{value:o.tripId},'Chuyến đã chọn: '+o.tripId)
             )),
             h('td',null,h(StatusBadge,{s:o.status})),
             h('td',null,h('div',{style:{display:'flex',gap:2}},
