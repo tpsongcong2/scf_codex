@@ -1403,6 +1403,7 @@ function ProdShiftsTab({prodShifts,setProdShifts,prodShiftRules,setProdShiftRule
     }
     return group||'Chưa phân khu vực';
   };
+  const groupSortLabel=sortMode==='area'?'Khu vực':(sortMode==='prod'?'Ca sản xuất':'Ca giao hàng');
   const sortPriorityForGroup=group=>{
     if(sortMode==='prod'){
       return group==='Chưa có ca SX'?9999:0;
@@ -1460,7 +1461,7 @@ function ProdShiftsTab({prodShifts,setProdShifts,prodShiftRules,setProdShiftRule
       return sameLoc(r.location,loc)&&hit;
     });
     const missing=pairs.filter(p=>!hitShift(p.location,p.orderTime)).map(p=>({...p,reason:hasLocation(p.location)?'Giờ ĐH nằm ngoài khoảng đã cấu hình':'Địa điểm mới chưa có trong bảng'}));
-    if(!missing.length){window.showToast('Tất cả địa điểm và giờ giao đã có trong Ca sản xuất.','info');return;}
+    if(!missing.length){window.showToast('Tất cả địa điểm và giờ giao đã có trong bảng cài đặt ca SX + ca GH tự động.','info');return;}
     const p=missing[0];
     const sameTime=prodShifts.map(normalize).find(s=>s.orderTime===p.orderTime||s.startTime===p.orderTime);
     const preset=sameTime||presetForTime(p.orderTime)||empty;
@@ -1488,7 +1489,7 @@ function ProdShiftsTab({prodShifts,setProdShifts,prodShiftRules,setProdShiftRule
     if(!(form.startTime||form.orderTime)||!(form.endTime||form.orderTime)||!form.actualProdTime){window.showToast('Nhập đủ khoảng giờ đơn hàng và giờ sản xuất thực tế!','warn');return;}
     const autoRule=shiftRuleFromProdTime(form.actualProdTime);
     const autoName=autoRule?.name||'';
-    if(!autoName){window.showToast('Giờ sản xuất chưa nằm trong khung ca SX nhỏ nào. Hãy chỉnh bảng cài đặt khung giờ SX.','warn');return;}
+    if(!autoName){window.showToast('Giờ sản xuất chưa nằm trong khung ca SX nhỏ nào. Hãy chỉnh bảng cài đặt ca SX + ca GH tự động.','warn');return;}
     const {_missingCount,_missingReason,_missingOrderIds,_missingSummary,...cleanForm}=form;
     const chosenTripShift=(shifts||[]).find(x=>x.id===form.tripShiftId);
     const data={...cleanForm,name:autoName,color:autoRule?.color||form.color,textColor:autoRule?.textColor||form.textColor,orderTime:form.startTime||form.orderTime,startTime:form.startTime||form.orderTime,endTime:form.endTime||form.orderTime,prodDateOffset:Number(form.prodDateOffset||0),tripDateOffset:Number(form.tripDateOffset||0),tripShiftId:String(form.tripShiftId||''),tripShiftName:chosenTripShift?.name||form.tripShiftName||'',labelPrintDateOffset:Number(form.labelPrintDateOffset||0)};
@@ -1501,7 +1502,7 @@ function ProdShiftsTab({prodShifts,setProdShifts,prodShiftRules,setProdShiftRule
     h('div',{className:'ptitle'},h('i',{className:'ti ti-clock-play',style:{fontSize:20}}),'Cài đặt ca SX + ca GH tự động'),
     h('div',{style:{marginBottom:'1rem',padding:'12px 16px',background:'#EAF4EF',borderRadius:'var(--r)',fontSize:13}},
       h('div',{style:{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap',marginBottom:8}},
-        h('b',null,'Cài đặt khung giờ SX → Ca sản xuất:'),
+        h('b',null,'Cài đặt khung giờ SX → ca SX + ca GH tự động:'),
         h('span',{style:{fontSize:12,color:'var(--tx2)'}},'Sửa khoảng giờ để hệ thống tự gom đơn vào đúng ca')
       ),
       h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:8}},
@@ -1550,7 +1551,7 @@ function ProdShiftsTab({prodShifts,setProdShifts,prodShiftRules,setProdShiftRule
               rows.push(h('tr',{key:item.key},
                 h('td',{colSpan:11,style:{padding:'8px 12px',background:'#E6F1FB',color:'#185FA5',fontWeight:700,borderTop:'1px solid var(--bd)',borderBottom:'1px solid var(--bd)'}},
                   h('i',{className:'ti ti-category',style:{fontSize:14,marginRight:6}}),
-                  (sortMode==='area'?'Khu vực: ':'Nhóm: ')+item.label
+                  groupSortLabel+': '+item.label
                 )
               ));
               return;
@@ -1584,7 +1585,7 @@ function ProdShiftsTab({prodShifts,setProdShifts,prodShiftRules,setProdShiftRule
       groupedShiftRows.map(item=>{
         if(item.type==='group'){
           return h('div',{key:item.key,style:{padding:'8px 12px',background:'#E6F1FB',color:'#185FA5',fontWeight:700,borderRadius:10,marginBottom:8}},
-            (sortMode==='area'?'Khu vực: ':'Nhóm: ')+item.label
+            groupSortLabel+': '+item.label
           );
         }
         const r=item.row;
@@ -5219,6 +5220,7 @@ const NAV=[
   {key:'company',icon:'ti-building',label:'Thông tin công ty'},
   {key:'employees',icon:'ti-id-badge',label:'Nhân viên'},
   {key:'backup',icon:'ti-database-export',label:'Backup dữ liệu'},
+  {key:'prodshifts',icon:'ti-clock-play',label:'Cài đặt ca SX + ca GH tự động'},
   {sec:'Quản lý nhân sự'},
   {key:'attendance',icon:'ti-face-id',label:'Chấm công'},
   {key:'advances',icon:'ti-cash-banknote',label:'Ứng lương'},
@@ -5263,7 +5265,6 @@ const NAV=[
   {key:'maint_vehicle',icon:'ti-car',label:'Bảo dưỡng xe'},
   {key:'maint_machine',icon:'ti-settings',label:'Bảo dưỡng máy'},
   {sec:'Sản xuất'},
-  {key:'prodshifts',icon:'ti-clock-play',label:'Cài đặt ca SX + ca GH tự động'},
   {key:'prodsummary',icon:'ti-clipboard-list',label:'Tổng hợp SX'},
   {key:'prodorders',icon:'ti-building-factory',label:'Đơn sản xuất'},
   {key:'stock',icon:'ti-package',label:'Tồn kho'},
