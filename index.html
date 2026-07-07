@@ -1369,7 +1369,12 @@ function ProdShiftsTab({prodShifts,setProdShifts,prodShiftRules,setProdShiftRule
   const shiftNameFromProdTime=t=>shiftRuleFromProdTime(t)?.name||'';
   const[form,sf]=useState(empty);
   const pointOptions=[...new Set((customers||[]).flatMap(c=>(c.points||[]).map(pt=>pt.name).filter(Boolean)))].sort((a,b)=>a.localeCompare(b));
-  const dateOffsetLabel=v=>Number(v)===-1?'Trước ngày ĐH 1 ngày (-1)':'Cùng ngày ĐH (0)';
+  const dateOffsetLabel=v=>{
+    const n=Number(v||0);
+    if(n===-1)return 'Trước ngày ĐH 1 ngày (-1)';
+    if(n===1)return 'Sau ngày ĐH 1 ngày (+1)';
+    return 'Cùng ngày ĐH (0)';
+  };
   const areaOfLocation=loc=>{
     const name=(loc||'').trim().toUpperCase();
     if(!name)return 'Chưa phân khu vực';
@@ -1589,7 +1594,8 @@ function ProdShiftsTab({prodShifts,setProdShifts,prodShiftRules,setProdShiftRule
       h('div',{className:'prodshift-pair-grid'},
         h(F,{label:'Ngày chuyến'},h('select',{value:String(form.tripDateOffset??0),onChange:e=>sf(p=>({...p,tripDateOffset:Number(e.target.value)}))},
           h('option',{value:'-1'},'Trước ngày ĐH 1 ngày (-1)'),
-          h('option',{value:'0'},'Cùng ngày ĐH (0)')
+          h('option',{value:'0'},'Cùng ngày ĐH (0)'),
+          h('option',{value:'1'},'Sau ngày ĐH 1 ngày (+1)')
         )),
         h(F,{label:'Ca giao hàng'},h('select',{value:form.tripShiftId||'',onChange:e=>{
           const sh=(shifts||[]).find(x=>x.id===e.target.value);
